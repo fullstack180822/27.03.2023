@@ -83,5 +83,53 @@ public class GenericTableAccess<T> {
 
         return result;
     }
+    public void updateTable(T item, int id) {
+        "UPDATE PERSON SET [column_name] = [value]"
+    }
+
+    public void createTable() throws SQLException {
+        Statement statement = connection.createStatement();
+        statement.setQueryTimeout(30);
+
+        DBField primaryKeyDBField = null;
+        for(var field: theclass.getDeclaredFields()) {
+            DBField dbField = field.getAnnotation(DBField.class);
+            if (dbField != null) {
+                if (dbField.isPrimaryKey()) {
+                    System.out.println("found primary key");
+                    primaryKeyDBField = dbField;
+                    break;
+                }
+            }
+        }
+
+        HashMap<Class, String> mapJavaFieldToSql = new HashMap<>();
+        mapJavaFieldToSql.put(int.class, "integer");
+        mapJavaFieldToSql.put(String.class, "string");
+
+
+        //statement.executeUpdate("create table person (id PRIMARY KEY integer, name string)");
+        String query = "create table " + table_name + " (";
+        if (primaryKeyDBField != null) {
+            query += primaryKeyDBField.column_name() + " PRIMARY KEY " +
+                    mapJavaFieldToSql.get(primaryKeyDBField.type()) + ",";
+        }
+
+        for(var field: theclass.getDeclaredFields()) {
+                            // field.name == name
+            //field.get(item) // item -- (Person) : {name:'danny', id: 1}
+            DBField dbField = field.getAnnotation(DBField.class);
+            if (dbField != null && dbField != primaryKeyDBField) {
+                query += dbField.column_name() + " " + mapJavaFieldToSql.get(dbField.type()) + ",";
+            }
+        }
+        // remove last comma
+        query += ")";
+
+        statement.executeUpdate(query);
+
+        // INSERRT -- insert into person values(1, 'leo')
+        // if type == String ->   ' + value + '
+    }
 
 }
